@@ -3,6 +3,23 @@ import { db, animals, litters } from '@/lib/db'
 import { getAuthUser, unauthorized } from '@/lib/auth'
 import { eq } from 'drizzle-orm'
 
+// Convert DD.MM.YYYY or DD/MM/YYYY to YYYY-MM-DD
+function toIsoDate(val: string | null | undefined): string | null {
+  if (!val) return null
+  const s = String(val).trim()
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  // DD.MM.YYYY or DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})$/)
+  if (m) {
+    const day = m[1].padStart(2, '0')
+    const month = m[2].padStart(2, '0')
+    const year = m[3].length === 2 ? '20' + m[3] : m[3]
+    return `${year}-${month}-${day}`
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   if (!await getAuthUser(req)) return unauthorized()
   try {
@@ -20,14 +37,14 @@ export async function POST(req: NextRequest) {
         if (existing.length === 0) {
           await db.insert(animals).values({
             nickname: row.nickname,
-            dob: row.dob || null,
+            dob: toIsoDate(row.dob),
             origin: row.origin || null,
             fatherName: row.fatherName || null,
             fatherOrigin: row.fatherOrigin || null,
             motherName: row.motherName || null,
             motherOrigin: row.motherOrigin || null,
-            arrivedDate: row.arrivedDate || null,
-            culledDate: row.culledDate || null,
+            arrivedDate: toIsoDate(row.arrivedDate),
+            culledDate: toIsoDate(row.culledDate),
           })
           created++
         }
@@ -46,12 +63,12 @@ export async function POST(req: NextRequest) {
         await db.insert(litters).values({
           doeId: doe?.id ?? null,
           buckId: buck?.id ?? null,
-          matingPlanned: row.matingPlanned || null,
-          matingActual: row.matingActual || null,
-          controlPlanned: row.controlPlanned || null,
-          controlActual: row.controlActual || null,
-          birthPlanned: row.birthPlanned || null,
-          birthActual: row.birthActual || null,
+          matingPlanned: toIsoDate(row.matingPlanned as string),
+          matingActual: toIsoDate(row.matingActual as string),
+          controlPlanned: toIsoDate(row.controlPlanned as string),
+          controlActual: toIsoDate(row.controlActual as string),
+          birthPlanned: toIsoDate(row.birthPlanned as string),
+          birthActual: toIsoDate(row.birthActual as string),
           kitCount: row.kitCount || null,
         })
         created++
