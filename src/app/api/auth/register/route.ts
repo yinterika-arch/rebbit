@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const token = await createToken(user.id, user.username)
     return Response.json({ access_token: token })
   } catch (e) {
-    return Response.json({ detail: 'Ошибка сервера' }, { status: 500 })
+    console.error('Register error:', e)
+    return Response.json({ detail: 'Ошибка сервера', error: String(e) }, { status: 500 })
   }
 }
