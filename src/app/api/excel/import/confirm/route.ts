@@ -6,11 +6,11 @@ import { eq } from 'drizzle-orm'
 export async function POST(req: NextRequest) {
   if (!await getAuthUser(req)) return unauthorized()
   try {
-    const { raw_data } = await req.json()
-    const { tribe, litters: littersData } = JSON.parse(raw_data)
+    const { preview_id } = await req.json()
+    const { tribe, litters: littersData } = JSON.parse(Buffer.from(preview_id, 'base64').toString('utf-8'))
 
-    let animalsAdded = 0
-    let littersAdded = 0
+    let created = 0
+    let updated = 0
 
     // Import animals
     if (tribe?.length) {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
             arrivedDate: row.arrivedDate || null,
             culledDate: row.culledDate || null,
           })
-          animalsAdded++
+          created++
         }
       }
     }
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
 
       for (const row of littersData) {
         if (!row.birthActual && !row.birthPlanned) continue
-        const doe = row.doeName ? animalByName.get(row.doeName.toLowerCase()) : null
-        const buck = row.buckName ? animalByName.get(row.buckName.toLowerCase()) : null
+        const doe = row.doeName ? animalByName.get((row.doeName as string).toLowerCase()) : null
+        const buck = row.buckName ? animalByName.get((row.buckName as string).toLowerCase()) : null
         await db.insert(litters).values({
           doeId: doe?.id ?? null,
           buckId: buck?.id ?? null,
@@ -54,12 +54,13 @@ export async function POST(req: NextRequest) {
           birthActual: row.birthActual || null,
           kitCount: row.kitCount || null,
         })
-        littersAdded++
+        created++
       }
     }
 
-    return Response.json({ ok: true, animals_added: animalsAdded, litters_added: littersAdded })
+    return Response.json({ created, updated })
   } catch (e) {
+    console.error('Import confirm error:', e)
     return Response.json({ detail: `Ошибка импорта: ${e}` }, { status: 500 })
   }
 }
