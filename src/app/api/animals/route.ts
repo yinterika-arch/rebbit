@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db, animals, litters } from '@/lib/db'
 import { getAuthUser, unauthorized } from '@/lib/auth'
-import { eq, isNull, count, max } from 'drizzle-orm'
+import { eq, isNull, count, max, and } from 'drizzle-orm'
 
 function ageStr(dob: string | null): string | null {
   if (!dob) return null
@@ -38,18 +38,13 @@ export async function GET(req: NextRequest) {
   const sex = searchParams.get('sex')
   const active = searchParams.get('active') !== 'false'
 
-  let query = db.select().from(animals).$dynamic()
   const conditions = []
   if (sex) conditions.push(eq(animals.sex, sex))
   if (active) conditions.push(isNull(animals.culledDate))
 
-  const rows = conditions.length
-    ? await db.select().from(animals).where(conditions.reduce((a, b) => ({ ...a, ...b }) as any))
-    : await db.select().from(animals)
+  const rows = await db.select().from(animals).where(conditions.length ? and(...conditions) : undefined)
 
-  const filtered = rows
-    .filter(a => (!sex || a.sex === sex) && (!active || !a.culledDate))
-    .sort((a, b) => a.nickname.localeCompare(b.nickname))
+  const filtered = rows.sort((a, b) => a.nickname.localeCompare(b.nickname))
 
   return Response.json(await Promise.all(filtered.map(enrich)))
 }
