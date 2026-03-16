@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 18px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: #F5F3F0;
+    color: #1C1C1C;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  input, select, textarea {
+    font-size: 18px;
+  }
+
+  button {
+    min-height: 56px;
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full rounded-xl border border-border px-4 py-4 text-base bg-white
+    focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+
+  .btn-primary {
+    @apply w-full min-h-touch rounded-xl bg-primary text-white text-base font-medium
+    flex items-center justify-center gap-2
+    active:bg-primary-dark transition-colors;
+  }
+
+  .btn-secondary {
+    @apply w-full min-h-touch rounded-xl border border-border bg-white text-base
+    flex items-center justify-center gap-2
+    active:bg-gray-50 transition-colors;
+  }
+
+  .btn-danger {
+    @apply w-full min-h-touch rounded-xl bg-danger text-white text-base font-medium
+    flex items-center justify-center gap-2
+    active:opacity-80 transition-opacity;
+  }
+
+  .card {
+    @apply bg-card rounded-2xl border border-border p-4 shadow-sm;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold text-gray-900;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-muted mb-1.5;
+  }
+}
