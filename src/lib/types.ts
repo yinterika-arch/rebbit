@@ -38,25 +38,26 @@ export interface Litter {
   notes: string | null
   days_since_birth: number | null
   day29_date: string | null
+  day60_date: string | null
   day100_date: string | null
-  day120_date: string | null
   day29_remaining: number | null
+  day60_remaining: number | null
   day100_remaining: number | null
-  day120_remaining: number | null
-  weighing_1: Weighing | null
-  weighing_2: Weighing | null
+  weighings: Weighing[]
 }
 
 export interface Weighing {
   id: number
   litter_id: number
-  weighing_number: 1 | 2
+  weighing_number: number
+  weighing_type: string | null
   weighing_date: string | null
   weights: number[] | null
   kit_count: number | null
+  min_weight: number | null
+  max_weight: number | null
   avg_weight: number | null
   total_weight: number | null
-  defective_count: number | null
   notes: string | null
 }
 

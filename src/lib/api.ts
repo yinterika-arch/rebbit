@@ -104,7 +104,7 @@ export const api = {
     return request(`/weighings${qs}`)
   },
 
-  createWeighing: (data: { litter_id: number; weighing_number: number; weighing_date?: string; weights: number[]; notes?: string }): Promise<Weighing> =>
+  createWeighing: (data: { litter_id: number; weighing_type?: string; weighing_date?: string; weights: number[]; notes?: string }): Promise<Weighing> =>
     request('/weighings', { method: 'POST', body: JSON.stringify(data) }),
 
   updateWeighing: (id: number, data: Partial<Weighing>): Promise<Weighing> =>

@@ -14,7 +14,7 @@ export default function LittersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
-  const [weighingModal, setWeighingModal] = useState<{ litter: Litter; num: 1 | 2 } | null>(null)
+  const [weighingModal, setWeighingModal] = useState<{ litter: Litter } | null>(null)
   const [editing, setEditing] = useState<Litter | null>(null)
 
   const load = useCallback(async () => {
@@ -61,10 +61,10 @@ export default function LittersPage() {
   // Count urgency
   const urgent = litters.filter(l =>
     (l.day29_remaining !== null && l.day29_remaining >= 0 && l.day29_remaining <= 3) ||
+    (l.day60_remaining !== null && l.day60_remaining >= 0 && l.day60_remaining <= 3) ||
     (l.day100_remaining !== null && l.day100_remaining >= 0 && l.day100_remaining <= 3) ||
-    (l.day120_remaining !== null && l.day120_remaining >= 0 && l.day120_remaining <= 3) ||
-    (l.day29_remaining !== null && l.day29_remaining < 0 && !l.weighing_1) ||
-    (l.day100_remaining !== null && l.day100_remaining < 0 && !l.weighing_2)
+    (l.day29_remaining !== null && l.day29_remaining < 0) ||
+    (l.day100_remaining !== null && l.day100_remaining < 0)
   )
 
   return (
@@ -117,7 +117,7 @@ export default function LittersPage() {
               litter={l}
               onEdit={openEdit}
               onDelete={handleDelete}
-              onAddWeighing={(litter, num) => setWeighingModal({ litter, num })}
+              onAddWeighing={(litter) => setWeighingModal({ litter })}
             />
           ))}
         </div>
@@ -132,10 +132,7 @@ export default function LittersPage() {
 
       {/* Weighing modal */}
       {weighingModal && (
-        <Modal
-          title={weighingModal.num === 1 ? 'Отсадка — взвешивание' : 'Приборка — взвешивание'}
-          onClose={() => setWeighingModal(null)}
-        >
+        <Modal title="Взвешивание" onClose={() => setWeighingModal(null)}>
           <WeighingForm
             initial={weighingModal}
             onSave={handleSaveWeighing}

@@ -29,24 +29,28 @@ export async function POST(req: NextRequest) {
     let created = 0
     let updated = 0
 
-    // Import animals
+    // Import animals (upsert — update existing to fix sex/columns)
     if (tribe?.length) {
       for (const row of tribe) {
         if (!row.nickname) continue
         const existing = await db.select().from(animals).where(eq(animals.nickname, row.nickname))
+        const values = {
+          nickname: row.nickname,
+          sex: row.sex || null,
+          dob: toIsoDate(row.dob),
+          fatherName: row.fatherName || null,
+          fatherOrigin: row.fatherOrigin || null,
+          motherName: row.motherName || null,
+          motherOrigin: row.motherOrigin || null,
+          arrivedDate: toIsoDate(row.arrivedDate),
+          culledDate: toIsoDate(row.culledDate),
+        }
         if (existing.length === 0) {
-          await db.insert(animals).values({
-            nickname: row.nickname,
-            dob: toIsoDate(row.dob),
-            origin: row.origin || null,
-            fatherName: row.fatherName || null,
-            fatherOrigin: row.fatherOrigin || null,
-            motherName: row.motherName || null,
-            motherOrigin: row.motherOrigin || null,
-            arrivedDate: toIsoDate(row.arrivedDate),
-            culledDate: toIsoDate(row.culledDate),
-          })
+          await db.insert(animals).values(values)
           created++
+        } else {
+          await db.update(animals).set(values).where(eq(animals.nickname, row.nickname))
+          updated++
         }
       }
     }

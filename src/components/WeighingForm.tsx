@@ -3,8 +3,10 @@ import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import type { Litter, Weighing } from '@/lib/types'
 
+const WEIGHING_TYPES = ['Вес 30', 'Вес 60', 'Вес 100', 'Убойный']
+
 interface Props {
-  initial?: { litter: Litter; num: 1 | 2 }
+  initial?: { litter: Litter }
   onSave: (w: Weighing) => void
   onCancel: () => void
 }
@@ -12,7 +14,7 @@ interface Props {
 export default function WeighingForm({ initial, onSave, onCancel }: Props) {
   const [litters, setLitters] = useState<Litter[]>([])
   const [selectedLitter, setSelectedLitter] = useState<Litter | null>(initial?.litter || null)
-  const [wNum, setWNum] = useState<1 | 2>(initial?.num || 1)
+  const [weighingType, setWeighingType] = useState<string>('Убойный')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [weights, setWeights] = useState<string[]>(
     () => Array(initial?.litter?.kit_count || 1).fill('')
@@ -35,10 +37,8 @@ export default function WeighingForm({ initial, onSave, onCancel }: Props) {
   const count = validWeights.length
   const avg = count ? (validWeights.reduce((a, b) => a + b, 0) / count).toFixed(3) : null
   const total = count ? validWeights.reduce((a, b) => a + b, 0).toFixed(3) : null
-
-  // Compare with weighing 1 for weighing 2
-  const w1 = selectedLitter?.weighing_1
-  const defective = wNum === 2 && w1 && count > 0 ? (w1.kit_count || 0) - count : null
+  const minW = count ? Math.min(...validWeights).toFixed(3) : null
+  const maxW = count ? Math.max(...validWeights).toFixed(3) : null
 
   function addSlot() { setWeights(w => [...w, '']) }
   function removeSlot(i: number) { setWeights(w => w.filter((_, idx) => idx !== i)) }
@@ -55,7 +55,7 @@ export default function WeighingForm({ initial, onSave, onCancel }: Props) {
     try {
       const result = await api.createWeighing({
         litter_id: selectedLitter.id,
-        weighing_number: wNum,
+        weighing_type: weighingType,
         weighing_date: date,
         weights: validWeights,
         notes: notes || undefined,
@@ -105,15 +105,15 @@ export default function WeighingForm({ initial, onSave, onCancel }: Props) {
       <div>
         <label className="label">Тип взвешивания</label>
         <div className="grid grid-cols-2 gap-3">
-          {([1, 2] as const).map(n => (
+          {WEIGHING_TYPES.map(t => (
             <button
-              key={n}
+              key={t}
               type="button"
-              onClick={() => setWNum(n)}
+              onClick={() => setWeighingType(t)}
               className={`min-h-touch rounded-xl border text-base font-medium transition-colors
-                ${wNum === n ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-border'}`}
+                ${weighingType === t ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-border'}`}
             >
-              {n === 1 ? '⚖️ Отсадка (29 дн)' : '⚖️ Приборка (100 дн)'}
+              {t}
             </button>
           ))}
         </div>
@@ -167,27 +167,20 @@ export default function WeighingForm({ initial, onSave, onCancel }: Props) {
             <span className="font-semibold">{count}</span>
           </div>
           <div className="flex justify-between text-base">
+            <span className="text-muted">Мин. вес:</span>
+            <span className="font-semibold">{minW} кг</span>
+          </div>
+          <div className="flex justify-between text-base">
+            <span className="text-muted">Макс. вес:</span>
+            <span className="font-semibold">{maxW} кг</span>
+          </div>
+          <div className="flex justify-between text-base">
             <span className="text-muted">Средний вес:</span>
             <span className="font-semibold">{avg} кг</span>
           </div>
           <div className="flex justify-between text-base">
             <span className="text-muted">Общий вес:</span>
             <span className="font-semibold">{total} кг</span>
-          </div>
-          {defective !== null && (
-            <div className="flex justify-between text-base pt-1 border-t border-primary/20">
-              <span className="text-danger font-medium">Отсеяно:</span>
-              <span className="font-bold text-danger">{Math.max(0, defective)}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {wNum === 2 && w1 && (
-        <div className="bg-gray-50 rounded-xl p-3 text-sm">
-          <p className="font-medium text-muted mb-1">Отсадка (сравнение):</p>
-          <div className="text-gray-700">
-            {w1.kit_count} кр. · ср. {w1.avg_weight?.toFixed(3)} кг · итого {w1.total_weight?.toFixed(3)} кг
           </div>
         </div>
       )}

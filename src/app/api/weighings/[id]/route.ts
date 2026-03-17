@@ -8,9 +8,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const data = await req.json()
   const w: number[] = data.weights || []
   if (w.length) {
+    const total = w.reduce((s: number, v: number) => s + v, 0)
     data.kitCount = w.length
-    data.totalWeight = w.reduce((s: number, v: number) => s + v, 0).toFixed(3)
-    data.avgWeight = (w.reduce((s: number, v: number) => s + v, 0) / w.length).toFixed(3)
+    data.minWeight = Math.min(...w).toFixed(3)
+    data.maxWeight = Math.max(...w).toFixed(3)
+    data.avgWeight = (total / w.length).toFixed(3)
+    data.totalWeight = total.toFixed(3)
   }
   const [weighing] = await db.update(weighings).set(data).where(eq(weighings.id, parseInt(params.id))).returning()
   if (!weighing) return Response.json({ detail: 'Не найдено' }, { status: 404 })

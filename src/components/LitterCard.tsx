@@ -6,7 +6,7 @@ interface Props {
   litter: Litter
   onEdit: (l: Litter) => void
   onDelete: (id: number) => void
-  onAddWeighing: (l: Litter, num: 1 | 2) => void
+  onAddWeighing: (l: Litter) => void
 }
 
 function formatDate(s: string | null): string {
@@ -30,17 +30,15 @@ function CountdownBadge({ days, label }: { days: number | null; label: string })
 export default function LitterCard({ litter, onEdit, onDelete, onAddWeighing }: Props) {
   const [expanded, setExpanded] = useState(false)
 
-  const hasW1 = !!litter.weighing_1
-  const hasW2 = !!litter.weighing_2
   const birthDate = litter.birth_actual || litter.birth_planned
   const isPlanned = !litter.birth_actual && !!litter.birth_planned
+  const weighings = litter.weighings || []
 
   return (
     <div className="card">
       <button className="w-full text-left" onClick={() => setExpanded(v => !v)}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            {/* Names */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg font-bold">{litter.doe_nickname || '?'}</span>
               {litter.buck_nickname && (
@@ -50,19 +48,17 @@ export default function LitterCard({ litter, onEdit, onDelete, onAddWeighing }: 
               {litter.slaughter_flag && <span className="badge bg-gray-200 text-gray-700">забой</span>}
             </div>
 
-            {/* Birth date + count */}
             <div className="mt-1 text-sm text-muted flex flex-wrap gap-x-3">
               <span>Окрол: {formatDate(birthDate)}</span>
               {litter.kit_count != null && <span>Крольчат: {litter.kit_count}</span>}
               {litter.days_since_birth != null && <span>{litter.days_since_birth} дней</span>}
             </div>
 
-            {/* Countdown badges */}
             {!litter.slaughter_flag && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 <CountdownBadge days={litter.day29_remaining} label="29 дн" />
+                <CountdownBadge days={litter.day60_remaining} label="60 дн" />
                 <CountdownBadge days={litter.day100_remaining} label="100 дн" />
-                <CountdownBadge days={litter.day120_remaining} label="120 дн" />
               </div>
             )}
           </div>
@@ -72,7 +68,6 @@ export default function LitterCard({ litter, onEdit, onDelete, onAddWeighing }: 
 
       {expanded && (
         <div className="mt-4 pt-4 border-t border-border space-y-3">
-          {/* Dates table */}
           <div className="space-y-1.5 text-sm">
             <Row label="Вязка (план)" value={formatDate(litter.mating_planned)} />
             <Row label="Вязка (факт)" value={formatDate(litter.mating_actual)} />
@@ -80,47 +75,33 @@ export default function LitterCard({ litter, onEdit, onDelete, onAddWeighing }: 
             <Row label="Контроль (факт)" value={formatDate(litter.control_actual)} />
             <Row label="Окрол (план)" value={formatDate(litter.birth_planned)} />
             <Row label="Окрол (факт)" value={formatDate(litter.birth_actual)} />
-            <Row label="Отсадка" value={formatDate(litter.weaning_date)} />
-            <Row label="100 дней" value={formatDate(litter.day100_date)} />
-            <Row label="120 дней" value={formatDate(litter.day120_date)} />
+            <Row label="29 дней" value={formatDate(litter.day29_date)} />
+            <Row label="60 дней (отсадка)" value={formatDate(litter.day60_date)} />
+            <Row label="100 дней (убой)" value={formatDate(litter.day100_date)} />
           </div>
 
-          {/* Weighings summary */}
-          {(hasW1 || hasW2) && (
+          {weighings.length > 0 && (
             <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-              {hasW1 && litter.weighing_1 && (
-                <div className="text-sm">
-                  <span className="font-medium">Отсадка: </span>
-                  {litter.weighing_1.kit_count} кр., ср. {litter.weighing_1.avg_weight?.toFixed(3)} кг
-                  {litter.weighing_1.weighing_date && ` (${formatDate(litter.weighing_1.weighing_date)})`}
+              {weighings.map(w => (
+                <div key={w.id} className="text-sm">
+                  <span className="font-medium">{w.weighing_type || `Взвешивание ${w.weighing_number}`}: </span>
+                  {w.kit_count} кр.
+                  {w.avg_weight != null && ` · ср. ${Number(w.avg_weight).toFixed(3)} кг`}
+                  {w.min_weight != null && ` · мин. ${Number(w.min_weight).toFixed(3)}`}
+                  {w.max_weight != null && ` · макс. ${Number(w.max_weight).toFixed(3)}`}
+                  {w.weighing_date && ` (${formatDate(w.weighing_date)})`}
                 </div>
-              )}
-              {hasW2 && litter.weighing_2 && (
-                <div className="text-sm">
-                  <span className="font-medium">Приборка: </span>
-                  {litter.weighing_2.kit_count} кр., ср. {litter.weighing_2.avg_weight?.toFixed(3)} кг
-                  {litter.weighing_2.defective_count != null && (
-                    <span className="text-danger ml-2">отсеяно: {litter.weighing_2.defective_count}</span>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
           )}
 
-          {/* Weighing buttons */}
           {!litter.slaughter_flag && (
-            <div className="flex gap-2">
-              {!hasW1 && (
-                <button onClick={() => onAddWeighing(litter, 1)} className="flex-1 min-h-[48px] rounded-xl bg-primary/10 text-primary text-sm font-medium">
-                  + Отсадка
-                </button>
-              )}
-              {hasW1 && !hasW2 && (
-                <button onClick={() => onAddWeighing(litter, 2)} className="flex-1 min-h-[48px] rounded-xl bg-secondary/10 text-secondary text-sm font-medium">
-                  + Приборка
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => onAddWeighing(litter)}
+              className="w-full min-h-[48px] rounded-xl bg-primary/10 text-primary text-sm font-medium"
+            >
+              + Взвешивание
+            </button>
           )}
 
           {litter.notes && (
@@ -144,7 +125,7 @@ export default function LitterCard({ litter, onEdit, onDelete, onAddWeighing }: 
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="text-muted w-36 shrink-0">{label}</span>
+      <span className="text-muted w-40 shrink-0">{label}</span>
       <span className="text-gray-800">{value}</span>
     </div>
   )

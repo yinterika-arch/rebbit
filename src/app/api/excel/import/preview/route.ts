@@ -15,43 +15,52 @@ export async function POST(req: NextRequest) {
     const wb = XLSX.read(buf, { type: 'buffer', cellDates: true })
 
     // Parse tribe sheet
+    // Columns: 0=кличка, 1=дата рождения, 2=пол, 3=возраст(calc), 4=происх.отец,
+    //          5=отец кличка, 6=происх.отца, 7=мать кличка, 8=происх.матери,
+    //          9=дата прихода, 10=дата списания
     const tribeSheet = wb.Sheets['племя'] || wb.Sheets['Племя'] || wb.Sheets[wb.SheetNames[0]]
     const tribeRows: Record<string, string | null>[] = []
     if (tribeSheet) {
       const rows = XLSX.utils.sheet_to_json(tribeSheet, { header: 1, raw: false }) as string[][]
       for (const r of rows.slice(1)) {
         if (!r[0]) continue
+        const sexRaw = (r[2] || '').toString().trim()
+        const sex = sexRaw === 'Крол' ? 'buck' : sexRaw === 'Самка' ? 'doe' : null
+        const culledRaw = (r[10] || '').toString().trim()
         tribeRows.push({
           nickname: r[0] || '',
           dob: r[1] || null,
-          origin: r[3] || null,
-          fatherName: r[4] || null,
-          fatherOrigin: r[5] || null,
-          motherName: r[6] || null,
-          motherOrigin: r[7] || null,
-          arrivedDate: r[8] || null,
-          culledDate: r[9] || null,
+          sex,
+          fatherOrigin: r[4] || null,
+          fatherName: r[5] || null,
+          motherName: r[7] || null,
+          motherOrigin: r[8] || null,
+          arrivedDate: r[9] || null,
+          culledDate: culledRaw && culledRaw !== 'Нет' ? (culledRaw === 'Да' ? '2000-01-01' : culledRaw) : null,
         })
       }
     }
 
     // Parse litters sheet
+    // Columns: 0=крольчиха, 1=крол, 2=вязка план, 3=вязка факт,
+    //          4=контроль план, 5=контроль факт, 6=окрол план,
+    //          7=срок(calc), 8=окрол факт, 9=возраст(calc), 10=количество
     const littersSheet = wb.Sheets['окролы'] || wb.Sheets['Окролы'] || wb.Sheets[wb.SheetNames[1]]
     const littersRows: Record<string, string | number | null>[] = []
     if (littersSheet) {
       const rows = XLSX.utils.sheet_to_json(littersSheet, { header: 1, raw: false }) as string[][]
       for (const r of rows.slice(1)) {
-        if (!r[0] && !r[5]) continue
+        if (!r[0] && !r[8]) continue
         littersRows.push({
-          matingPlanned: r[0] || null,
-          matingActual: r[1] || null,
-          controlPlanned: r[2] || null,
-          controlActual: r[3] || null,
-          birthPlanned: r[4] || null,
-          birthActual: r[5] || null,
-          kitCount: r[8] ? parseInt(r[8]) : null,
-          doeName: r[16] || null,
-          buckName: r[17] || null,
+          doeName: r[0] || null,
+          buckName: r[1] || null,
+          matingPlanned: r[2] || null,
+          matingActual: r[3] || null,
+          controlPlanned: r[4] || null,
+          controlActual: r[5] || null,
+          birthPlanned: r[6] || null,
+          birthActual: r[8] || null,
+          kitCount: r[10] ? parseInt(r[10]) : null,
         })
       }
     }

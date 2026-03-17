@@ -37,8 +37,10 @@ export default function LitterForm({ initial, onSave, onCancel }: Props) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.getAnimals({ sex: 'doe', active: false }).then(setDoes).catch(() => {})
-    api.getAnimals({ sex: 'buck', active: false }).then(setBucks).catch(() => {})
+    api.getAnimals({ active: false }).then(all => {
+      setDoes(all.filter(a => a.sex === 'doe' || a.sex === null))
+      setBucks(all.filter(a => a.sex === 'buck' || a.sex === null))
+    }).catch(() => {})
   }, [])
 
   function set(field: string, value: string | boolean) {

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { db, litters, animals } from '@/lib/db'
+import { db, litters, animals, weighings } from '@/lib/db'
 import { getAuthUser, unauthorized } from '@/lib/auth'
 import { eq } from 'drizzle-orm'
 
@@ -9,7 +9,12 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().split('T')[0]
 }
 
-function enrichLitter(litter: typeof litters.$inferSelect, doe?: typeof animals.$inferSelect | null, buck?: typeof animals.$inferSelect | null) {
+function enrichLitter(
+  litter: typeof litters.$inferSelect,
+  doe?: typeof animals.$inferSelect | null,
+  buck?: typeof animals.$inferSelect | null,
+  litterWeighings?: typeof weighings.$inferSelect[]
+) {
   const today = new Date().toISOString().split('T')[0]
   const birth = litter.birthActual
 
@@ -18,8 +23,8 @@ function enrichLitter(litter: typeof litters.$inferSelect, doe?: typeof animals.
     : null
 
   const day29Date = birth ? addDays(birth, 29) : null
+  const day60Date = birth ? addDays(birth, 60) : null
   const day100Date = birth ? addDays(birth, 100) : null
-  const day120Date = birth ? addDays(birth, 120) : null
 
   return {
     ...litter,
@@ -27,11 +32,12 @@ function enrichLitter(litter: typeof litters.$inferSelect, doe?: typeof animals.
     buck_nickname: buck?.nickname ?? null,
     days_since_birth: daysSinceBirth,
     day29_date: day29Date,
+    day60_date: day60Date,
     day100_date: day100Date,
-    day120_date: day120Date,
     day29_remaining: day29Date ? Math.floor((new Date(day29Date).getTime() - new Date(today).getTime()) / 86400000) : null,
+    day60_remaining: day60Date ? Math.floor((new Date(day60Date).getTime() - new Date(today).getTime()) / 86400000) : null,
     day100_remaining: day100Date ? Math.floor((new Date(day100Date).getTime() - new Date(today).getTime()) / 86400000) : null,
-    day120_remaining: day120Date ? Math.floor((new Date(day120Date).getTime() - new Date(today).getTime()) / 86400000) : null,
+    weighings: (litterWeighings || []).sort((a, b) => a.weighingNumber - b.weighingNumber),
   }
 }
 
@@ -52,8 +58,15 @@ export async function GET(req: NextRequest) {
 
   const allAnimals = await db.select().from(animals)
   const animalMap = new Map(allAnimals.map(a => [a.id, a]))
+  const allWeighings = await db.select().from(weighings)
+  const weighingMap = new Map<number, typeof weighings.$inferSelect[]>()
+  for (const w of allWeighings) {
+    const arr = weighingMap.get(w.litterId) || []
+    arr.push(w)
+    weighingMap.set(w.litterId, arr)
+  }
 
-  return Response.json(rows.map(l => enrichLitter(l, animalMap.get(l.doeId ?? -1), animalMap.get(l.buckId ?? -1))))
+  return Response.json(rows.map(l => enrichLitter(l, animalMap.get(l.doeId ?? -1), animalMap.get(l.buckId ?? -1), weighingMap.get(l.id) || [])))
 }
 
 export async function POST(req: NextRequest) {
@@ -62,5 +75,5 @@ export async function POST(req: NextRequest) {
   const [litter] = await db.insert(litters).values(data).returning()
   const doe = litter.doeId ? (await db.select().from(animals).where(eq(animals.id, litter.doeId)))[0] : null
   const buck = litter.buckId ? (await db.select().from(animals).where(eq(animals.id, litter.buckId)))[0] : null
-  return Response.json(enrichLitter(litter, doe, buck))
+  return Response.json(enrichLitter(litter, doe, buck, []))
 }
