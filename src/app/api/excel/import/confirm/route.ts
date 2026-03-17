@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { db, animals, litters } from '@/lib/db'
+import { db, animals, litters, weighings } from '@/lib/db'
 import { getAuthUser, unauthorized } from '@/lib/auth'
 import { eq } from 'drizzle-orm'
 
@@ -23,11 +23,18 @@ function toIsoDate(val: string | null | undefined): string | null {
 export async function POST(req: NextRequest) {
   if (!await getAuthUser(req)) return unauthorized()
   try {
-    const { preview_id } = await req.json()
+    const { preview_id, mode } = await req.json()
     const { tribe, litters: littersData } = JSON.parse(Buffer.from(preview_id, 'base64').toString('utf-8'))
 
     let created = 0
     let updated = 0
+
+    // Replace mode: clear all existing data first
+    if (mode === 'replace') {
+      await db.delete(weighings)
+      await db.delete(litters)
+      await db.delete(animals)
+    }
 
     // Import animals (upsert — update existing to fix sex/columns)
     if (tribe?.length) {

@@ -47,6 +47,7 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [importPreview, setImportPreview] = useState<import('@/lib/types').ImportPreview | null>(null)
   const [importLoading, setImportLoading] = useState(false)
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge')
 
   useEffect(() => {
     Promise.all([
@@ -145,7 +146,7 @@ export default function SettingsPage() {
     if (!importPreview) return
     setImportLoading(true)
     try {
-      const result = await api.importExcelConfirm(importPreview.preview_id) as { created: number; updated: number }
+      const result = await api.importExcelConfirm(importPreview.preview_id, importMode) as { created: number; updated: number }
       alert(`Импорт выполнен: добавлено ${result.created}, обновлено ${result.updated}`)
       setImportPreview(null)
       if (fileRef.current) fileRef.current.value = ''
@@ -277,12 +278,31 @@ export default function SettingsPage() {
           </div>
 
           <div className="card">
-            <p className="text-base font-semibold mb-2">Импорт</p>
-            <p className="text-sm text-muted mb-3">Загрузить Excel-файл для обновления данных. Перед применением будет показан список изменений.</p>
+            <p className="text-base font-semibold mb-3">Импорт</p>
+
+            {/* Mode selector */}
+            <div className="grid grid-cols-1 gap-2 mb-4">
+              {([
+                { value: 'merge', label: 'Дополнить данные', desc: 'Новые записи добавятся, существующие обновятся' },
+                { value: 'replace', label: 'Заменить полностью', desc: 'Все текущие данные будут удалены и заменены' },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setImportMode(opt.value)}
+                  className={`text-left px-4 py-3 rounded-xl border transition-colors
+                    ${importMode === opt.value ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-border'}`}
+                >
+                  <div className="font-medium">{opt.label}</div>
+                  <div className={`text-sm mt-0.5 ${importMode === opt.value ? 'text-white/80' : 'text-muted'}`}>{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+
             <input
               ref={fileRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.xlsb"
               onChange={handleImportFile}
               className="hidden"
             />

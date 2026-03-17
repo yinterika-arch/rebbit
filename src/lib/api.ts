@@ -152,8 +152,8 @@ export const api = {
     return res.json()
   },
 
-  importExcelConfirm: (preview_id: string) =>
-    request('/excel/import/confirm', { method: 'POST', body: JSON.stringify({ preview_id }) }),
+  importExcelConfirm: (preview_id: string, mode: 'merge' | 'replace' = 'merge') =>
+    request('/excel/import/confirm', { method: 'POST', body: JSON.stringify({ preview_id, mode }) }),
 
   exportExcel: async (): Promise<Blob> => {
     const token = getToken()
