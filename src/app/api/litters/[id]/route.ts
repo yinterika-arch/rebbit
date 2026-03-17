@@ -17,7 +17,20 @@ async function enrichLitter(litter: typeof litters.$inferSelect, doe?: typeof an
   const day100Date = birth ? addDays(birth, 100) : null
   const litterWeighings = await db.select().from(weighings).where(eq(weighings.litterId, litter.id))
   return {
-    ...litter,
+    id: litter.id,
+    doe_id: litter.doeId,
+    buck_id: litter.buckId,
+    mating_planned: litter.matingPlanned,
+    mating_actual: litter.matingActual,
+    control_planned: litter.controlPlanned,
+    control_actual: litter.controlActual,
+    birth_planned: litter.birthPlanned,
+    birth_actual: litter.birthActual,
+    kit_count: litter.kitCount,
+    weaning_date: litter.weaningDate,
+    slaughter_flag: litter.slaughterFlag,
+    slaughter_date: litter.slaughterDate,
+    notes: litter.notes,
     doe_nickname: doe?.nickname ?? null,
     buck_nickname: buck?.nickname ?? null,
     days_since_birth: birth ? Math.floor((new Date(today).getTime() - new Date(birth).getTime()) / 86400000) : null,
@@ -27,7 +40,20 @@ async function enrichLitter(litter: typeof litters.$inferSelect, doe?: typeof an
     day29_remaining: day29Date ? Math.floor((new Date(day29Date).getTime() - new Date(today).getTime()) / 86400000) : null,
     day60_remaining: day60Date ? Math.floor((new Date(day60Date).getTime() - new Date(today).getTime()) / 86400000) : null,
     day100_remaining: day100Date ? Math.floor((new Date(day100Date).getTime() - new Date(today).getTime()) / 86400000) : null,
-    weighings: litterWeighings.sort((a, b) => a.weighingNumber - b.weighingNumber),
+    weighings: litterWeighings.map(w => ({
+      id: w.id,
+      litter_id: w.litterId,
+      weighing_number: w.weighingNumber,
+      weighing_type: w.weighingType,
+      weighing_date: w.weighingDate,
+      weights: w.weights,
+      kit_count: w.kitCount,
+      min_weight: w.minWeight,
+      max_weight: w.maxWeight,
+      avg_weight: w.avgWeight,
+      total_weight: w.totalWeight,
+      notes: w.notes,
+    })).sort((a, b) => a.weighing_number - b.weighing_number),
   }
 }
 
