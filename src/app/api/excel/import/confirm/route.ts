@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
 
       for (const row of littersData) {
         if (!row.birthActual && !row.birthPlanned) continue
+        if (!row.doeName) continue
         const doe = row.doeName ? animalByName.get((row.doeName as string).toLowerCase()) : null
         const buck = row.buckName ? animalByName.get((row.buckName as string).toLowerCase()) : null
         await db.insert(litters).values({
