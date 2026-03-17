@@ -44,13 +44,52 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
   }
 
+  const ageStr = animal.dob ? (() => {
+    const born = new Date(animal.dob)
+    const now = new Date()
+    const days = Math.floor((now.getTime() - born.getTime()) / 86400000)
+    const years = Math.floor(days / 365)
+    const months = Math.floor((days % 365) / 30)
+    const d = days % 30
+    const parts = []
+    if (years > 0) parts.push(`${years}г`)
+    if (months > 0) parts.push(`${months}мес`)
+    if (d > 0 || parts.length === 0) parts.push(`${d}д`)
+    return parts.join(' ')
+  })() : null
+
+  const litterItems = doeL.map(l => {
+    const wmap = weighingsByLitter.get(l.id)
+    const w1 = wmap?.w1 ?? null
+    const w2 = wmap?.w2 ?? null
+    const defective = (w1?.kitCount && w2?.kitCount) ? w1.kitCount - w2.kitCount : null
+    return {
+      litter_id: l.id,
+      birth_date: l.birthActual || l.birthPlanned || null,
+      kit_count: l.kitCount ?? null,
+      w1_avg: w1?.avgWeight ? parseFloat(String(w1.avgWeight)) : null,
+      w1_total: w1?.totalWeight ? parseFloat(String(w1.totalWeight)) : null,
+      w1_count: w1?.kitCount ?? null,
+      w2_avg: w2?.avgWeight ? parseFloat(String(w2.avgWeight)) : null,
+      w2_total: w2?.totalWeight ? parseFloat(String(w2.totalWeight)) : null,
+      w2_count: w2?.kitCount ?? null,
+      defective,
+    }
+  })
+
   return Response.json({
-    animal,
+    animal: {
+      id: animal.id,
+      nickname: animal.nickname,
+      sex: animal.sex,
+      birth_date: animal.dob,
+      culled_date: animal.culledDate,
+      age_str: ageStr,
+    },
     litter_count: doeL.length,
-    litters: doeL,
+    litters: litterItems,
     total_kits: totalKits,
     avg_kit_count: Math.round(avgKitCount * 10) / 10,
-    weighings: doeL.map(l => ({ litter_id: l.id, ...weighingsByLitter.get(l.id) })),
     total_defective: totalDefective,
     avg_w1_weight: avgW1 ? Math.round(avgW1 * 1000) / 1000 : null,
     avg_w2_weight: avgW2 ? Math.round(avgW2 * 1000) / 1000 : null,
