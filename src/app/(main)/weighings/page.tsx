@@ -22,7 +22,7 @@ function urgencyClass(remaining: number | null) {
 export default function WeighingsPage() {
   const [litters, setLitters] = useState<Litter[]>([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState<{ litter: Litter; num: 1 | 2 } | null>(null)
+  const [modal, setModal] = useState<{ litter?: Litter } | null>(null)
 
   async function load() {
     setLoading(true)
@@ -41,8 +41,16 @@ export default function WeighingsPage() {
     load()
   }
 
-  const needW1 = litters.filter(l => !l.weighing_1 && l.birth_actual)
-  const needW2 = litters.filter(l => l.weighing_1 && !l.weighing_2 && l.birth_actual)
+  // Litters needing weighing at 29 days (no weighing yet)
+  const needW1 = litters.filter(l => l.birth_actual && l.weighings.length === 0)
+  // Litters that have weighing but may need more (approaching 100 days)
+  const approachingSlaughter = litters.filter(l =>
+    l.birth_actual &&
+    l.day100_remaining !== null &&
+    l.day100_remaining >= 0 &&
+    l.day100_remaining <= 14 &&
+    !l.weighings.some(w => w.weighing_type === 'Убойный')
+  )
 
   return (
     <div className="px-4 pt-5 pb-4">
@@ -52,19 +60,18 @@ export default function WeighingsPage() {
         <div className="text-center py-12 text-muted">Загрузка...</div>
       ) : (
         <>
-          {/* Quick add */}
           <button
-            onClick={() => setModal(null as unknown as { litter: Litter; num: 1 | 2 })}
+            onClick={() => setModal({})}
             className="btn-primary mb-5"
           >
             ⚖️ Новое взвешивание
           </button>
 
-          {/* Weighing 1 needed */}
+          {/* Need first weighing */}
           {needW1.length > 0 && (
             <section className="mb-5">
               <h2 className="text-base font-semibold text-gray-700 mb-2">
-                Отсадка не выполнена ({needW1.length})
+                Нет взвешиваний ({needW1.length})
               </h2>
               <div className="space-y-2">
                 {needW1.map(l => (
@@ -83,7 +90,7 @@ export default function WeighingsPage() {
                         )}
                       </div>
                       <button
-                        onClick={() => setModal({ litter: l, num: 1 })}
+                        onClick={() => setModal({ litter: l })}
                         className="min-h-[44px] px-4 rounded-xl bg-primary text-white text-sm font-medium"
                       >
                         Взвесить
@@ -95,30 +102,30 @@ export default function WeighingsPage() {
             </section>
           )}
 
-          {/* Weighing 2 needed */}
-          {needW2.length > 0 && (
+          {/* Approaching slaughter */}
+          {approachingSlaughter.length > 0 && (
             <section className="mb-5">
               <h2 className="text-base font-semibold text-gray-700 mb-2">
-                Приборка не выполнена ({needW2.length})
+                Скоро убой ({approachingSlaughter.length})
               </h2>
               <div className="space-y-2">
-                {needW2.map(l => (
+                {approachingSlaughter.map(l => (
                   <div key={l.id} className={`card border ${urgencyClass(l.day100_remaining)}`}>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold">{l.doe_nickname}</p>
                         <p className="text-sm text-muted">
                           Окрол: {formatDate(l.birth_actual)}
-                          {l.weighing_1?.kit_count ? ` · Отсадка: ${l.weighing_1.kit_count} кр.` : ''}
+                          {l.kit_count ? ` · ${l.kit_count} кр.` : ''}
                         </p>
                         {l.day100_remaining !== null && (
-                          <p className={`text-sm font-medium mt-0.5 ${l.day100_remaining < 0 ? 'text-danger' : l.day100_remaining <= 7 ? 'text-warn' : 'text-primary'}`}>
-                            100 дней: {l.day100_remaining < 0 ? `просрочено ${Math.abs(l.day100_remaining)} д.` : l.day100_remaining === 0 ? 'сегодня!' : `через ${l.day100_remaining} д.`}
+                          <p className={`text-sm font-medium mt-0.5 ${l.day100_remaining < 0 ? 'text-danger' : 'text-warn'}`}>
+                            100 дней: через {l.day100_remaining} д.
                           </p>
                         )}
                       </div>
                       <button
-                        onClick={() => setModal({ litter: l, num: 2 })}
+                        onClick={() => setModal({ litter: l })}
                         className="min-h-[44px] px-4 rounded-xl bg-secondary text-white text-sm font-medium"
                       >
                         Взвесить
@@ -130,29 +137,22 @@ export default function WeighingsPage() {
             </section>
           )}
 
-          {needW1.length === 0 && needW2.length === 0 && (
+          {needW1.length === 0 && approachingSlaughter.length === 0 && (
             <div className="text-center py-10 text-muted">
               <div className="text-4xl mb-2">✅</div>
-              <p>Все взвешивания актуальны</p>
+              <p>Нет срочных взвешиваний</p>
             </div>
           )}
         </>
       )}
 
-      {/* Modal — free choice */}
-      {modal === (null as unknown as { litter: Litter; num: 1 | 2 }) && (
+      {modal !== null && (
         <Modal title="Взвешивание" onClose={() => setModal(null)}>
-          <WeighingForm onSave={handleSave} onCancel={() => setModal(null)} />
-        </Modal>
-      )}
-
-      {/* Modal — pre-filled */}
-      {modal && modal !== (null as unknown as { litter: Litter; num: 1 | 2 }) && (
-        <Modal
-          title={modal.num === 1 ? 'Отсадка — взвешивание' : 'Приборка — взвешивание'}
-          onClose={() => setModal(null)}
-        >
-          <WeighingForm initial={modal} onSave={handleSave} onCancel={() => setModal(null)} />
+          <WeighingForm
+            initial={modal.litter ? { litter: modal.litter } : undefined}
+            onSave={handleSave}
+            onCancel={() => setModal(null)}
+          />
         </Modal>
       )}
     </div>
