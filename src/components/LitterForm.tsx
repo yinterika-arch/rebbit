@@ -60,6 +60,7 @@ export default function LitterForm({ initial, onSave, onCancel }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.doe_id) { setError('Выберите крольчиху'); return }
     setLoading(true)
     setError('')
     try {
