@@ -97,8 +97,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!await getAuthUser(req)) return unauthorized()
-  const data = await req.json()
-  const [litter] = await db.insert(litters).values(data).returning()
+  const d = await req.json()
+  const [litter] = await db.insert(litters).values({
+    doeId: d.doe_id || null,
+    buckId: d.buck_id || null,
+    matingPlanned: d.mating_planned || null,
+    matingActual: d.mating_actual || null,
+    controlPlanned: d.control_planned || null,
+    controlActual: d.control_actual || null,
+    birthPlanned: d.birth_planned || null,
+    birthActual: d.birth_actual || null,
+    kitCount: d.kit_count || null,
+    weaningDate: d.weaning_date || null,
+    slaughterFlag: d.slaughter_flag || false,
+    slaughterDate: d.slaughter_date || null,
+    notes: d.notes || null,
+  }).returning()
   const doe = litter.doeId ? (await db.select().from(animals).where(eq(animals.id, litter.doeId)))[0] : null
   const buck = litter.buckId ? (await db.select().from(animals).where(eq(animals.id, litter.buckId)))[0] : null
   return Response.json(enrichLitter(litter, doe, buck, []))

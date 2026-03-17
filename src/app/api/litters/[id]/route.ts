@@ -68,9 +68,23 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   if (!await getAuthUser(req)) return unauthorized()
-  const data = await req.json()
-  const [litter] = await db.update(litters).set({ ...data, updatedAt: new Date() })
-    .where(eq(litters.id, parseInt(params.id))).returning()
+  const d = await req.json()
+  const [litter] = await db.update(litters).set({
+    doeId: d.doe_id !== undefined ? (d.doe_id || null) : undefined,
+    buckId: d.buck_id !== undefined ? (d.buck_id || null) : undefined,
+    matingPlanned: d.mating_planned !== undefined ? (d.mating_planned || null) : undefined,
+    matingActual: d.mating_actual !== undefined ? (d.mating_actual || null) : undefined,
+    controlPlanned: d.control_planned !== undefined ? (d.control_planned || null) : undefined,
+    controlActual: d.control_actual !== undefined ? (d.control_actual || null) : undefined,
+    birthPlanned: d.birth_planned !== undefined ? (d.birth_planned || null) : undefined,
+    birthActual: d.birth_actual !== undefined ? (d.birth_actual || null) : undefined,
+    kitCount: d.kit_count !== undefined ? (d.kit_count || null) : undefined,
+    weaningDate: d.weaning_date !== undefined ? (d.weaning_date || null) : undefined,
+    slaughterFlag: d.slaughter_flag !== undefined ? d.slaughter_flag : undefined,
+    slaughterDate: d.slaughter_date !== undefined ? (d.slaughter_date || null) : undefined,
+    notes: d.notes !== undefined ? (d.notes || null) : undefined,
+    updatedAt: new Date(),
+  }).where(eq(litters.id, parseInt(params.id))).returning()
   if (!litter) return Response.json({ detail: 'Не найдено' }, { status: 404 })
   const doe = litter.doeId ? (await db.select().from(animals).where(eq(animals.id, litter.doeId)))[0] : null
   const buck = litter.buckId ? (await db.select().from(animals).where(eq(animals.id, litter.buckId)))[0] : null
