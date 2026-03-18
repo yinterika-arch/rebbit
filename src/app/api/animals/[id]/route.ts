@@ -36,9 +36,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   if (!await getAuthUser(req)) return unauthorized()
-  const data = await req.json()
-  const [animal] = await db.update(animals).set({ ...data, updatedAt: new Date() })
-    .where(eq(animals.id, parseInt(params.id))).returning()
+  const d = await req.json()
+  const [animal] = await db.update(animals).set({
+    nickname: d.nickname,
+    sex: d.sex,
+    dob: d.dob,
+    origin: d.origin,
+    fatherNickname: d.father_nickname,
+    motherNickname: d.mother_nickname,
+    arrivalDate: d.arrival_date,
+    culledDate: d.culled_date,
+    restDays: d.rest_days,
+    notes: d.notes,
+    updatedAt: new Date(),
+  }).where(eq(animals.id, parseInt(params.id))).returning()
   if (!animal) return Response.json({ detail: 'Не найдено' }, { status: 404 })
   return Response.json(await enrich(animal))
 }
