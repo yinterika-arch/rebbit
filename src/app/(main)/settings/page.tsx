@@ -107,8 +107,9 @@ export default function SettingsPage() {
   async function handleTestNotification(channel: string) {
     setTestResult('Отправка...')
     try {
-      const res = await api.sendTestNotification({ channel }) as Record<string, string>
-      setTestResult(Object.entries(res).map(([k, v]) => `${k}: ${v}`).join(', '))
+      const res = await api.sendTestNotification({ channel }) as Record<string, unknown>
+      const ok = Object.entries(res).every(([, v]) => v && typeof v === 'object' && (v as Record<string,unknown>).ok)
+      setTestResult(ok ? '✓ Уведомление отправлено успешно' : '✗ Ошибка отправки — проверьте настройки')
     } catch (e: unknown) {
       setTestResult(e instanceof Error ? e.message : 'Ошибка')
     }

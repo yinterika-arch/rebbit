@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     motherName: d.mother_nickname,
     arrivedDate: d.arrival_date,
     culledDate: d.culled_date,
-    restPeriodDays: d.rest_days,
+    restPeriodDays: d.rest_period_days,
     notes: d.notes,
     updatedAt: new Date(),
   }).where(eq(animals.id, parseInt(params.id))).returning()
