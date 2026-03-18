@@ -24,7 +24,17 @@ async function enrich(animal: typeof animals.$inferSelect) {
     .select({ cnt: count(), last: max(litters.birthActual) })
     .from(litters)
     .where(eq(litters.doeId, animal.id))
-  return { ...animal, age_str: ageStr(animal.dob), litter_count: stats?.cnt ?? 0, last_litter_date: stats?.last ?? null }
+  return {
+    ...animal,
+    rest_period_days: animal.restPeriodDays,
+    arrived_date: animal.arrivedDate,
+    culled_date: animal.culledDate,
+    father_name: animal.fatherName,
+    mother_name: animal.motherName,
+    age_str: ageStr(animal.dob),
+    litter_count: stats?.cnt ?? 0,
+    last_litter_date: stats?.last ?? null,
+  }
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {

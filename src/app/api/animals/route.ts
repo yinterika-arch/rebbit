@@ -26,6 +26,11 @@ async function enrich(animal: typeof animals.$inferSelect) {
     .where(eq(litters.doeId, animal.id))
   return {
     ...animal,
+    rest_period_days: animal.restPeriodDays,
+    arrived_date: animal.arrivedDate,
+    culled_date: animal.culledDate,
+    father_name: animal.fatherName,
+    mother_name: animal.motherName,
     age_str: ageStr(animal.dob),
     litter_count: stats?.cnt ?? 0,
     last_litter_date: stats?.last ?? null,
@@ -51,7 +56,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!await getAuthUser(req)) return unauthorized()
-  const data = await req.json()
-  const [animal] = await db.insert(animals).values(data).returning()
+  const d = await req.json()
+  const [animal] = await db.insert(animals).values({
+    nickname: d.nickname,
+    sex: d.sex,
+    dob: d.dob,
+    origin: d.origin,
+    fatherName: d.father_name,
+    motherName: d.mother_name,
+    arrivedDate: d.arrived_date,
+    culledDate: d.culled_date,
+    restPeriodDays: d.rest_period_days,
+    notes: d.notes,
+  }).returning()
   return Response.json(await enrich(animal))
 }
