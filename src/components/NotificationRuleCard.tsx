@@ -38,12 +38,12 @@ export default function NotificationRuleCard({ rule, onToggle, onEdit, onDelete 
         {/* Toggle */}
         <button
           onClick={() => onToggle(rule.id, !rule.enabled)}
-          className={`relative w-10 h-6 rounded-full transition-colors shrink-0
+          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 overflow-hidden
             ${rule.enabled ? 'bg-primary' : 'bg-gray-300'}`}
           aria-label={rule.enabled ? 'Выключить' : 'Включить'}
         >
-          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform
-            ${rule.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+          <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform
+            ${rule.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
         <button
           onClick={() => onEdit(rule)}
